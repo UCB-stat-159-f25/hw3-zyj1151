@@ -150,3 +150,56 @@ def test_reqshift_and_write_wavfile(tmp_path):
     assert shifted.shape == data.shape
     # Check energy preserved
     assert np.isclose(np.std(shifted), np.std(data), rtol=0.2)
+
+
+
+I used ai to generate bash command for the last question.
+Prompt: generate bash command that creates and configures the environment (but does not activate it). If you have already created an environment of the same name, have the command instead update the environment with a provided environment.yml file
+
+Answer:env:
+	if conda env list | grep -q "^$(ENV_NAME)\s"; then \
+		conda env update -n $(ENV_NAME) -f $(ENV_FILE) --prune; \
+	else \
+		conda env create -n $(ENV_NAME) -f $(ENV_FILE); \
+	fi
+🧠 What happens when you run make env
+When you type:
+
+bash
+Copy code
+make env
+Make runs everything indented under the env: target in a bash shell.
+
+So this code says:
+
+Check if the environment already exists
+
+bash
+Copy code
+conda env list | grep -q "^$(ENV_NAME)\s"
+conda env list lists all Conda environments.
+
+grep -q "^$(ENV_NAME)\s" searches quietly (-q) for a line that starts with your environment name (e.g., notebook).
+
+The \s matches a space, so it only matches full environment names like notebook, not partial matches.
+
+👉 If it finds one, the condition is true.
+
+If it exists → update it
+
+bash
+Copy code
+conda env update -n $(ENV_NAME) -f $(ENV_FILE) --prune
+-n $(ENV_NAME) = environment name (e.g., notebook)
+
+-f $(ENV_FILE) = the environment definition file (e.g., environment.yml)
+
+--prune = remove any packages that are not listed in your environment file (keeps it clean and consistent)
+
+If it doesn’t exist → create it
+
+bash
+Copy code
+conda env create -n $(ENV_NAME) -f $(ENV_FILE)
+fi ends the if-statement
+Just like in bash scripts, fi closes the if ... then ... else ... block.
