@@ -1,2 +1,16 @@
 # MyST build outputs
 _build
+
+# Ignore all Jupyter notebook checkpoints
+.ipynb_checkpoints/
+ligotools/.ipynb_checkpoints/
+ligotools/tests/.ipynb_checkpoints/
+figures/.ipynb_checkpoints/
+data/.ipynb_checkpoints/
+
+# Ignore Python cache folders
+ligotools/__pycache__/
+ligotools/tests/__pycache__/
+
+# Ignore build metadata
+ligotools.egg-info/
