@@ -1,0 +1,152 @@
+Prompt: once I finish pyproject.toml, how should I use pip to import ligotools?
+
+Answer: From the project root (the folder that contains ligotools/), run:
+pip install -e .
+That tells pip to install ligotools in editable mode, so any changes you make inside the package are instantly reflected without reinstalling.
+You should see something like:
+Obtaining file:///home/jovyan/hw3-zyj1151
+Installing collected packages: ligotools
+Successfully installed ligotools-0.1.0
+
+
+I used ai to generate test cases for given function
+
+Prompt: generate two test cases for the following function:
+def dq_channel_to_seglist(channel, fs=4096):
+    """
+    WARNING: 
+    This function is designed to work the output of the low level function
+    LOADDATA, not the output from the main data loading function GETSTRAIN.
+
+    Takes a data quality 1 Hz channel, as returned by
+    loaddata, and returns a segment list.  The segment
+    list is really a list of slices for the strain 
+    associated strain vector.  
+
+    If CHANNEL is a dictionary instead of a single channel,
+    an attempt is made to return a segment list for the DEFAULT
+    channel.  
+
+    Returns a list of slices which can be used directly with the 
+    strain and time outputs of LOADDATA.
+    """
+    #-- Check if the user input a dictionary
+    if isinstance(channel, dict):
+        try:
+            channel = channel['DEFAULT']
+        except:
+            print("ERROR: Could not find DEFAULT channel in dictionary")
+            raise
+
+    # -- Create the segment list
+    condition = channel > 0
+    boundaries = np.where(np.diff(condition) == True)[0]
+    # -- Need to +1 due to how np.diff works 
+    boundaries = boundaries + 1
+    # if the array "begins" True, we need to complete the first segment
+    if condition[0]:
+        boundaries = np.append(0,boundaries)
+    # if the array "ends" True, we need to complete the last segment
+    if condition[-1]:
+        boundaries = np.append(boundaries,len(condition))
+
+    # -- group the segment boundaries two by two
+    segments = boundaries.reshape( ( len(boundaries) // 2, 2 ) ) #// for python 3
+    # -- Account for sampling frequency and return a slice
+    segment_list = [slice(start*fs, stop*fs) for (start,stop) in segments]
+    
+    return segment_list
+
+
+Answer:
+def test_single_contiguous_segment():
+    """
+    If the DQ channel is all ones, we should get one segment
+    covering the entire array length * fs.
+    """
+    dq = np.ones(5, dtype=int)
+    fs = 4  # arbitrary sampling rate
+
+    segs = dq_channel_to_seglist(dq, fs=fs)
+
+    # Expect one slice from 0 to len(dq)*fs = 20
+    assert len(segs) == 1
+    assert segs[0].start == 0
+    assert segs[0].stop == len(dq) * fs
+
+
+def test_multiple_segments():
+    """
+    Check that disjoint active regions are returned as separate slices.
+    """
+    # Active in [1,3) and [5,6)
+    dq = np.array([0, 1, 1, 0, 0, 1, 0], dtype=int)
+    fs = 2
+
+    segs = dq_channel_to_seglist(dq, fs=fs)
+
+    # Expect 2 segments:
+    #   indices [1,3) -> samples [2,6)
+    #   indices [5,6) -> samples [10,12)
+    assert len(segs) == 2
+    assert segs[0].start == 2 and segs[0].stop == 6
+    assert segs[1].start == 10 and segs[1].stop == 12
+
+
+
+Prompt: generate one test for each function: 
+def whiten(strain, interp_psd, dt):
+    Nt = len(strain)
+    freqs = np.fft.rfftfreq(Nt, dt)
+    freqs1 = np.linspace(0, 2048, Nt // 2 + 1)
+
+    # whitening: transform to freq domain, divide by asd, then transform back, 
+    # taking care to get normalization right.
+    hf = np.fft.rfft(strain)
+    norm = 1./np.sqrt(1./(dt*2))
+    white_hf = hf / np.sqrt(interp_psd(freqs)) * norm
+    white_ht = np.fft.irfft(white_hf, n=Nt)
+    return white_ht
+
+# function that shifts frequency of a band-passed signal
+def reqshift(data,fshift=100,sample_rate=4096):
+    """Frequency shift the signal by constant
+    """
+    x = np.fft.rfft(data)
+    T = len(data)/float(sample_rate)
+    df = 1.0/T
+    nbins = int(fshift/df)
+    # print T,df,nbins,x.real.shape
+    y = np.roll(x.real,nbins) + 1j*np.roll(x.imag,nbins)
+    y[0:nbins]=0.
+    z = np.fft.irfft(y)
+    return z
+
+Answer:
+def test_whiten_output_shape_and_mean():
+    """Test that whiten() returns same-length array with roughly zero mean."""
+    np.random.seed(0)
+    strain = np.random.randn(4096)
+    interp_psd = lambda f: np.ones_like(f)  # flat PSD
+    dt = 1/4096
+
+    white = whiten(strain, interp_psd, dt)
+
+    # Same shape
+    assert white.shape == strain.shape
+    # Mean close to zero
+    assert np.isclose(np.mean(white), 0, atol=1e-3)
+
+
+def test_reqshift_and_write_wavfile(tmp_path):
+    """Test that reqshift() shifts frequencies and write_wavfile() creates a file."""
+    fs = 4096
+    t = np.linspace(0, 1, fs)
+    # Make a pure tone at 100 Hz
+    data = np.sin(2 * np.pi * 100 * t)
+
+    # Shift it by +100 Hz and verify roughly doubles the frequency
+    shifted = reqshift(data, fshift=100, sample_rate=fs)
+    assert shifted.shape == data.shape
+    # Check energy preserved
+    assert np.isclose(np.std(shifted), np.std(data), rtol=0.2)

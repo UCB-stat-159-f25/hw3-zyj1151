@@ -1,0 +1,18 @@
+Metadata-Version: 2.4
+Name: ligotools
+Version: 0.1.0
+Summary: Python library for tools used in LIGO gravitational wave detection tutorial
+Author-email: "Ligo Scientific Collaboration (LSC) and Yujian Zhou" <yujian_zhou@berkeley.edu>
+Project-URL: Homepage, https://github.com/UCB-stat-159-f25/hw3-zyj1151
+Project-URL: Issues, https://github.com/UCB-stat-159-f25/hw3-zyj1151/issues
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE.txt
+Requires-Dist: numpy==2.0.*
+Requires-Dist: scipy==1.13.*
+Requires-Dist: h5py==3.12.*
+Requires-Dist: matplotlib==3.9.*
+Requires-Dist: ipykernel==6.29.*
+Dynamic: license-file
+
+[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/wOo27OxG)
